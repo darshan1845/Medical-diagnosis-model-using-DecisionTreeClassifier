@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical diagnosis model </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg:#F3F8F8;
+            --surface:#FFFFFF;
+            --ink:#12333B;
+            --ink-soft:#5B7A81;
+            --line:#DCEAE9;
+            --primary:#0F8B8D;
+            --primary-dark:#0B6567;
+            --accent:#E8556B;
+            --amber:#E3A23D;
+            --green:#2E9E6D;
+            --red:#E15C5C;
+            --shadow:0 10px 30px -12px rgba(15,60,62,0.18);
+            --radius:16px;
+            --font-display:'Space Grotesk', sans-serif;
+            --font-body:'Inter', sans-serif;
+            --font-mono:'IBM Plex Mono', monospace;
+        }
+
+        *{ box-sizing:border-box; }
+
+        html{ scroll-behavior:smooth; }
+
+        body{
+            margin:0;
+            font-family:var(--font-body);
+            color:var(--ink);
+            background:
+                linear-gradient(var(--bg),var(--bg)),
+                repeating-linear-gradient(0deg, rgba(15,139,141,0.05) 0 1px, transparent 1px 28px),
+                repeating-linear-gradient(90deg, rgba(15,139,141,0.05) 0 1px, transparent 1px 28px);
+            min-height:100vh;
+            padding-top:54px;
+        }
+
+        /* ---------- Top ECG monitor bar (signature element) ---------- */
+        .ecg-topbar{
+            position:fixed; top:0; left:0; right:0; height:54px;
+            background:linear-gradient(90deg,#0E2A2E,#123B3D);
+            overflow:hidden; z-index:50;
+            box-shadow:0 2px 12px rgba(0,0,0,0.25);
+        }
+        .ecg-track{ display:flex; width:200%; height:100%; animation:scrollECG 4s linear infinite; }
+        .ecg-track svg{ display:block; width:50%; height:100%; }
+        @keyframes scrollECG{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+
+        .brand-mark{
+            position:absolute; left:20px; top:0; height:54px; z-index:2;
+            display:flex; align-items:center; gap:8px;
+            font-family:var(--font-display); font-weight:600; letter-spacing:.02em;
+            color:#EAFBF9; font-size:15px;
+        }
+        .brand-mark .dot{
+            width:8px; height:8px; border-radius:50%; background:var(--accent);
+            animation:pulseDot 1.4s ease-out infinite;
+        }
+        @keyframes pulseDot{
+            0%{ box-shadow:0 0 0 0 rgba(232,85,107,0.6); }
+            70%{ box-shadow:0 0 0 10px rgba(232,85,107,0); }
+            100%{ box-shadow:0 0 0 0 rgba(232,85,107,0); }
+        }
+
+        /* ---------- Layout ---------- */
+        .page{ max-width:920px; margin:0 auto; padding:48px 24px 80px; }
+
+        .hero{ text-align:center; margin-bottom:34px; }
+        .eyebrow{
+            display:inline-block; padding:6px 14px; border-radius:999px;
+            background:rgba(15,139,141,0.1); color:var(--primary-dark);
+            font-family:var(--font-mono); font-size:12px; letter-spacing:.08em;
+            text-transform:uppercase; margin-bottom:14px;
+        }
+        .hero h1{
+            font-family:var(--font-display); font-size:clamp(26px,4vw,38px);
+            margin:0 0 10px; color:var(--ink);
+        }
+        .hero .subtitle{
+            color:var(--ink-soft); font-size:15.5px; max-width:520px;
+            margin:0 auto; line-height:1.6;
+        }
+
+        /* ---------- Progress ---------- */
+        .progress-wrap{
+            display:flex; align-items:center; gap:14px;
+            margin:0 auto 36px; max-width:520px;
+        }
+        .progress-track{ flex:1; height:8px; border-radius:999px; background:var(--line); overflow:hidden; }
+        .progress-fill{
+            height:100%; width:0%; border-radius:999px;
+            background:linear-gradient(90deg,var(--primary),var(--accent));
+            transition:width .4s ease;
+        }
+        .progress-label{ font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); white-space:nowrap; }
+
+        /* ---------- Cards ---------- */
+        .card{
+            background:var(--surface); border:1px solid var(--line);
+            border-radius:var(--radius); padding:28px 28px 30px; margin-bottom:24px;
+            box-shadow:var(--shadow);
+            transition:transform .25s ease, box-shadow .25s ease;
+            opacity:0; transform:translateY(14px);
+            animation:cardIn .6s ease forwards;
+        }
+        .card:nth-of-type(1){ animation-delay:.05s; }
+        .card:nth-of-type(2){ animation-delay:.15s; }
+        .card:nth-of-type(3){ animation-delay:.25s; }
+        .card:nth-of-type(4){ animation-delay:.35s; }
+        @keyframes cardIn{ to{ opacity:1; transform:translateY(0); } }
+
+        .card:hover{ transform:translateY(-3px); box-shadow:0 16px 40px -14px rgba(15,60,62,0.24); }
+
+        .card-head{ display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+        .card-icon{
+            width:38px; height:38px; border-radius:10px; flex:none;
+            display:flex; align-items:center; justify-content:center;
+            background:var(--icon-bg); color:var(--icon-color);
+        }
+        .card-head h2{ font-family:var(--font-display); font-size:18px; margin:0; color:var(--ink); }
+
+        .field-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:20px 22px; }
+
+        .field label{
+            display:block; font-size:13px; font-weight:600;
+            color:var(--ink-soft); margin-bottom:7px; letter-spacing:.01em;
+        }
+
+        .input-wrap{ position:relative; }
+        .field input[type=number]{
+            width:100%; padding:12px 46px 12px 14px; border-radius:10px;
+            border:1.5px solid var(--line); background:#FBFEFE;
+            font-family:var(--font-mono); font-size:15px; color:var(--ink);
+            transition:border-color .2s ease, box-shadow .2s ease;
+        }
+        .field input[type=number]::placeholder{ color:#AEC4C6; font-family:var(--font-body); }
+        .field input[type=number]:hover{ border-color:#B9D8D7; }
+        .field input[type=number]:focus{
+            outline:none; border-color:var(--primary);
+            box-shadow:0 0 0 4px rgba(15,139,141,0.14);
+        }
+        .unit{
+            position:absolute; right:12px; top:50%; transform:translateY(-50%);
+            font-family:var(--font-mono); font-size:12px; color:var(--ink-soft);
+            pointer-events:none;
+        }
+
+        .select-wrap{ position:relative; display:flex; align-items:center; }
+        .field select{
+            width:100%; appearance:none; -webkit-appearance:none;
+            padding:12px 40px 12px 14px; border-radius:10px;
+            border:1.5px solid var(--line); background:#FBFEFE;
+            font-family:var(--font-body); font-size:15px; color:var(--ink);
+            cursor:pointer; transition:border-color .2s ease, box-shadow .2s ease;
+        }
+        .field select:hover{ border-color:#B9D8D7; }
+        .field select:focus{
+            outline:none; border-color:var(--primary);
+            box-shadow:0 0 0 4px rgba(15,139,141,0.14);
+        }
+        .select-arrow{
+            position:absolute; right:14px; width:0; height:0;
+            border-left:5px solid transparent; border-right:5px solid transparent;
+            border-top:6px solid var(--ink-soft); pointer-events:none;
+            transition:transform .2s ease;
+        }
+        .field select:focus + .select-arrow{ transform:rotate(180deg); }
+        .risk-dot{
+            position:absolute; right:32px; width:8px; height:8px; border-radius:50%;
+            background:var(--line); transition:background .25s ease;
+        }
+        .risk-dot[data-risk="low"]{ background:var(--green); }
+        .risk-dot[data-risk="medium"]{ background:var(--amber); }
+        .risk-dot[data-risk="high"]{ background:var(--red); }
+
+        /* ---------- Submit ---------- */
+        .submit-row{ text-align:center; margin-top:14px; }
+        input[type=submit].submit-btn{
+            appearance:none; border:none; cursor:pointer;
+            font-family:var(--font-display); font-weight:600; font-size:16px; letter-spacing:.02em;
+            color:#fff; background:linear-gradient(90deg,var(--primary),var(--primary-dark));
+            padding:15px 46px; border-radius:999px;
+            box-shadow:0 12px 26px -10px rgba(15,139,141,0.55);
+            transition:transform .2s ease, box-shadow .2s ease;
+        }
+        input[type=submit].submit-btn:hover{ transform:translateY(-2px); box-shadow:0 16px 34px -10px rgba(15,139,141,.65); }
+        input[type=submit].submit-btn:active{ transform:translateY(0) scale(.98); }
+        input[type=submit].submit-btn:focus-visible{ outline:3px solid var(--accent); outline-offset:3px; }
+
+        .field input:focus-visible, .field select:focus-visible{
+            outline:3px solid rgba(15,139,141,0.35); outline-offset:1px;
+        }
+
+        .disclaimer{ text-align:center; font-size:12.5px; color:var(--ink-soft); margin-top:26px; line-height:1.6; }
+
+        @media (max-width:560px){
+            .page{ padding:36px 16px 60px; }
+            .card{ padding:22px; }
+        }
+
+        @media (prefers-reduced-motion:reduce){
+            .ecg-track{ animation:none; }
+            .card{ animation:none; opacity:1; transform:none; transition:none; }
+            .brand-mark .dot{ animation:none; }
+            input, select{ transition:none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ecg-topbar">
+        <span class="brand-mark"><span class="dot"></span>PulseCheck</span>
+        <div class="ecg-track">
+            <svg viewBox="0 0 400 54" preserveAspectRatio="none"><path d="M0,27 L60,27 L75,8 L90,46 L105,14 L120,27 L200,27 L215,8 L230,46 L245,14 L260,27 L400,27" fill="none" stroke="#4FE3D0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg viewBox="0 0 400 54" preserveAspectRatio="none"><path d="M0,27 L60,27 L75,8 L90,46 L105,14 L120,27 L200,27 L215,8 L230,46 L245,14 L260,27 L400,27" fill="none" stroke="#4FE3D0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+    </div>
+
+    <div class="page">
+
+        <header class="hero">
+            <span class="eyebrow">Cardiometabolic Risk Assessment</span>
+            <h1>Medical Diagnosis Model</h1>
+            <p class="subtitle">Enter your vitals below and the model will estimate your disease risk in seconds.</p>
+        </header>
+
+        <div class="progress-wrap">
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+            <span class="progress-label" id="progressLabel">0% complete</span>
+        </div>
+
+        <form action="" method="POST" id="diagnosisForm">
+
+            <section class="card">
+                <div class="card-head">
+                    <span class="card-icon" style="--icon-bg:rgba(15,139,141,.12); --icon-color:var(--primary);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-7 4 14 3-10 2 3h6"/></svg>
+                    </span>
+                    <h2>Vital Signs</h2>
+                </div>
+                <div class="field-grid">
+                    <div class="field">
+                        <label for="inp1">Please Enter your Age:</label>
+                        <div class="input-wrap">
+                            <input type="number" name="inp1" id="inp1" placeholder="e.g. 45">
+                            <span class="unit">yrs</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="inp2">Please Enter your blood pressure</label>
+                        <div class="input-wrap">
+                            <input type="number" name="inp2" id="inp2" placeholder="e.g. 120">
+                            <span class="unit">mmHg</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="inp4">Please Enter your Weight </label>
+                        <div class="input-wrap">
+                            <input type="number" name="inp4" id="inp4" placeholder="Weight in kgs">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="inp5">Please Enter your BMI</label>
+                        <div class="input-wrap">
+                            <input type="number" name="inp5" id="inp5" placeholder="e.g. 24.5">
+                            <span class="unit">kg/m²</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-head">
+                    <span class="card-icon" style="--icon-bg:rgba(74,111,165,.12); --icon-color:#4A6FA5;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5s6 7 6 11.5a6 6 0 0 1-12 0c0-4.5 6-11.5 6-11.5z"/></svg>
+                    </span>
+                    <h2>Lab Panel</h2>
+                </div>
+                <div class="field-grid">
+                    <div class="field">
+                        <label for="inp3">Please Enter your Cholesterol</label>
+                        <div class="input-wrap">
+                            <input type="number" name="inp3" id="inp3" placeholder="e.g. 180">
+                            <span class="unit">mg/dL</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="inp6">Please Enter your BloodSugar</label>
+                        <div class="input-wrap">
+                            <input type="number" name="inp6" id="inp6" placeholder="e.g. 90">
+                            <span class="unit">mg/dL</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="inp7">Please Enter your FastingSugar</label>
+                        <div class="input-wrap">
+                            <input type="number" name="inp7" id="inp7" placeholder="e.g. 95">
+                            <span class="unit">mg/dL</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-head">
+                    <span class="card-icon" style="--icon-bg:rgba(46,158,109,.12); --icon-color:var(--green);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-8-8"/><path d="M20 4 12 12"/></svg>
+                    </span>
+                    <h2>Lifestyle</h2>
+                </div>
+                <div class="field-grid">
+                    <div class="field">
+                        <label for="inp8">Please Enter your Exercise Hours</label>
+                        <div class="input-wrap">
+                            <input type="number" name="inp8" id="inp8" placeholder="Weekly Exercise Hours">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="inp10">Do you smoke ?</label>
+                        <div class="select-wrap">
+                            <select name="inp10" id="inp10" data-risk-field="smoke">
+                                <option hidden>Select option</option>
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                            <span class="risk-dot"></span>
+                            <span class="select-arrow"></span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="inp11">How often do you consume Alcohol ?</label>
+                        <div class="select-wrap">
+                            <select name="inp11" id="inp11" data-risk-field="alcohol">
+                                <option hidden>Select option</option>
+                                <option value="0">I don't Consume Alcohol</option>
+                                <option value="1">Occasionally</option>
+                                <option value="2">Regularly</option>
+                            </select>
+                            <span class="risk-dot"></span>
+                            <span class="select-arrow"></span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="inp12">Please Select your Stress Level</label>
+                        <div class="select-wrap">
+                            <select name="inp12" id="inp12" data-risk-field="stress">
+                                <option hidden>Select option</option>
+                                <option value="0">High</option>
+                                <option value="1">Low</option>
+                                <option value="2">Medium</option>
+                            </select>
+                            <span class="risk-dot"></span>
+                            <span class="select-arrow"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-head">
+                    <span class="card-icon" style="--icon-bg:rgba(232,85,107,.12); --icon-color:var(--accent);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M2.5 20c0-3.3 3-5.5 6.5-5.5s6.5 2.2 6.5 5.5"/><circle cx="17.5" cy="9" r="2.3"/><path d="M15.8 14.6c2.9.4 5.2 2.4 5.2 5.4"/></svg>
+                    </span>
+                    <h2>Family History</h2>
+                </div>
+                <div class="field-grid">
+                    <div class="field">
+                        <label for="inp9">Does your family have any medical history</label>
+                        <div class="select-wrap">
+                            <select name="inp9" id="inp9" data-risk-field="family">
+                                <option hidden>Select option</option>
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                            <span class="risk-dot"></span>
+                            <span class="select-arrow"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="submit-row">
+                <input type="submit" value="Predict" class="submit-btn">
+            </div>
+        </form>
+
+        <p class="disclaimer">This tool provides a statistical estimate based on the information entered and is not a substitute for professional medical advice, diagnosis, or treatment.</p>
+    </div>
+
+    <script>
+        (function(){
+            var form = document.getElementById('diagnosisForm');
+            var fields = Array.prototype.slice.call(form.querySelectorAll('input[type=number], select'));
+            var progressFill = document.getElementById('progressFill');
+            var progressLabel = document.getElementById('progressLabel');
+
+            function updateProgress(){
+                var filled = fields.filter(function(f){
+                    if (f.tagName === 'SELECT') { return f.selectedIndex > 0; }
+                    return f.value !== null && f.value.trim() !== '';
+                }).length;
+                var pct = Math.round((filled / fields.length) * 100);
+                progressFill.style.width = pct + '%';
+                progressLabel.textContent = pct + '% complete';
+            }
+
+            fields.forEach(function(f){
+                f.addEventListener('input', updateProgress);
+                f.addEventListener('change', updateProgress);
+            });
+
+            // Live risk-level dot next to each select, purely visual, does not touch submitted values
+            var riskMaps = {
+                smoke:   { '1':'high',   '0':'low'    },
+                alcohol: { '0':'low',    '1':'medium', '2':'high' },
+                stress:  { '0':'high',  '1':'low',    '2':'medium' },
+                family:  { '1':'high',   '0':'low'    }
+            };
+
+            form.querySelectorAll('select[data-risk-field]').forEach(function(sel){
+                var dot = sel.parentElement.querySelector('.risk-dot');
+                sel.addEventListener('change', function(){
+                    var map = riskMaps[sel.getAttribute('data-risk-field')];
+                    var level = map ? map[sel.value] : null;
+                    if (level) { dot.setAttribute('data-risk', level); }
+                    else { dot.removeAttribute('data-risk'); }
+                });
+            });
+
+            updateProgress();
+        })();
+    </script>
+
+</body>
+</html>

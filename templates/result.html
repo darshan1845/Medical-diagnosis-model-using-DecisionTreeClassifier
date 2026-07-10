@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicted Result is</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg:#F3F8F8;
+            --surface:#FFFFFF;
+            --ink:#12333B;
+            --ink-soft:#5B7A81;
+            --line:#DCEAE9;
+            --primary:#0F8B8D;
+            --primary-dark:#0B6567;
+            --accent:#E8556B;
+            --amber:#E3A23D;
+            --green:#2E9E6D;
+            --red:#E15C5C;
+            --shadow:0 10px 30px -12px rgba(15,60,62,0.18);
+            --radius:16px;
+            --font-display:'Space Grotesk', sans-serif;
+            --font-body:'Inter', sans-serif;
+            --font-mono:'IBM Plex Mono', monospace;
+            --result-color:var(--primary);
+            --result-bg:rgba(15,139,141,0.1);
+        }
+
+        *{ box-sizing:border-box; }
+        html{ scroll-behavior:smooth; }
+
+        body{
+            margin:0;
+            font-family:var(--font-body);
+            color:var(--ink);
+            background:
+                linear-gradient(var(--bg),var(--bg)),
+                repeating-linear-gradient(0deg, rgba(15,139,141,0.05) 0 1px, transparent 1px 28px),
+                repeating-linear-gradient(90deg, rgba(15,139,141,0.05) 0 1px, transparent 1px 28px);
+            min-height:100vh;
+            padding-top:54px;
+        }
+
+        /* ---------- Top ECG monitor bar (matches index.html) ---------- */
+        .ecg-topbar{
+            position:fixed; top:0; left:0; right:0; height:54px;
+            background:linear-gradient(90deg,#0E2A2E,#123B3D);
+            overflow:hidden; z-index:50;
+            box-shadow:0 2px 12px rgba(0,0,0,0.25);
+        }
+        .ecg-track{ display:flex; width:200%; height:100%; animation:scrollECG 4s linear infinite; }
+        .ecg-track svg{ display:block; width:50%; height:100%; }
+        @keyframes scrollECG{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+
+        .brand-mark{
+            position:absolute; left:20px; top:0; height:54px; z-index:2;
+            display:flex; align-items:center; gap:8px;
+            font-family:var(--font-display); font-weight:600; letter-spacing:.02em;
+            color:#EAFBF9; font-size:15px;
+        }
+        .brand-mark .dot{
+            width:8px; height:8px; border-radius:50%; background:var(--accent);
+            animation:pulseDot 1.4s ease-out infinite;
+        }
+        @keyframes pulseDot{
+            0%{ box-shadow:0 0 0 0 rgba(232,85,107,0.6); }
+            70%{ box-shadow:0 0 0 10px rgba(232,85,107,0); }
+            100%{ box-shadow:0 0 0 0 rgba(232,85,107,0); }
+        }
+
+        /* ---------- Layout ---------- */
+        .page{
+            max-width:640px; margin:0 auto; padding:60px 24px 80px;
+            display:flex; flex-direction:column; align-items:center;
+        }
+
+        .eyebrow{
+            display:inline-block; padding:6px 14px; border-radius:999px;
+            background:rgba(15,139,141,0.1); color:var(--primary-dark);
+            font-family:var(--font-mono); font-size:12px; letter-spacing:.08em;
+            text-transform:uppercase; margin-bottom:16px;
+        }
+
+        /* ---------- Result card ---------- */
+        .result-card{
+            width:100%; background:var(--surface); border:1px solid var(--line);
+            border-radius:20px; padding:44px 32px 36px; text-align:center;
+            box-shadow:var(--shadow);
+            opacity:0; transform:translateY(16px) scale(.98);
+            animation:cardIn .6s cubic-bezier(.2,.8,.2,1) forwards;
+        }
+        @keyframes cardIn{ to{ opacity:1; transform:translateY(0) scale(1); } }
+
+        .result-icon-ring{
+            width:84px; height:84px; margin:0 auto 22px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            background:var(--result-bg); color:var(--result-color);
+            position:relative;
+            transition:background .4s ease, color .4s ease;
+        }
+        .result-icon-ring::before{
+            content:''; position:absolute; inset:-8px; border-radius:50%;
+            border:2px solid var(--result-color); opacity:.35;
+            animation:ringPulse 2.2s ease-out infinite;
+        }
+        @keyframes ringPulse{
+            0%{ transform:scale(.85); opacity:.5; }
+            100%{ transform:scale(1.25); opacity:0; }
+        }
+
+        .result-label{
+            font-family:var(--font-mono); font-size:12.5px; letter-spacing:.08em;
+            text-transform:uppercase; color:var(--ink-soft); margin-bottom:10px;
+        }
+
+        .result-text{
+            font-family:var(--font-display); font-weight:600; font-size:clamp(24px,5vw,32px);
+            color:var(--result-color); margin:0 0 8px; line-height:1.3;
+            transition:color .4s ease;
+        }
+
+        .result-sub{ color:var(--ink-soft); font-size:14.5px; max-width:420px; margin:10px auto 0; line-height:1.6; }
+
+        .actions{ margin-top:30px; display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+
+        .btn{
+            font-family:var(--font-display); font-weight:600; font-size:15px; letter-spacing:.02em;
+            padding:13px 30px; border-radius:999px; text-decoration:none;
+            transition:transform .2s ease, box-shadow .2s ease;
+            display:inline-block;
+        }
+        .btn-primary{
+            color:#fff; background:linear-gradient(90deg,var(--primary),var(--primary-dark));
+            box-shadow:0 12px 26px -10px rgba(15,139,141,0.55);
+        }
+        .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 16px 34px -10px rgba(15,139,141,.65); }
+        .btn-ghost{
+            color:var(--primary-dark); background:transparent; border:1.5px solid var(--line);
+        }
+        .btn-ghost:hover{ border-color:var(--primary); transform:translateY(-2px); }
+
+        .disclaimer{ text-align:center; font-size:12.5px; color:var(--ink-soft); margin-top:30px; line-height:1.6; max-width:480px; }
+
+        @media (prefers-reduced-motion:reduce){
+            .ecg-track{ animation:none; }
+            .result-card{ animation:none; opacity:1; transform:none; }
+            .result-icon-ring::before{ animation:none; opacity:.35; }
+            .brand-mark .dot{ animation:none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ecg-topbar">
+        <span class="brand-mark"><span class="dot"></span>PulseCheck</span>
+        <div class="ecg-track">
+            <svg viewBox="0 0 400 54" preserveAspectRatio="none"><path d="M0,27 L60,27 L75,8 L90,46 L105,14 L120,27 L200,27 L215,8 L230,46 L245,14 L260,27 L400,27" fill="none" stroke="#4FE3D0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg viewBox="0 0 400 54" preserveAspectRatio="none"><path d="M0,27 L60,27 L75,8 L90,46 L105,14 L120,27 L200,27 L215,8 L230,46 L245,14 L260,27 L400,27" fill="none" stroke="#4FE3D0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+    </div>
+
+    <div class="page">
+        <span class="eyebrow">Assessment Complete</span>
+
+        <div class="result-card">
+            <div class="result-icon-ring" id="resultIconRing">
+                <svg id="iconNeutral" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-7 4 14 3-10 2 3h6"/></svg>
+                <svg id="iconLow" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 10 4.6-1.5 8-5 8-10V5l-8-3z"/><path d="m9 12 2 2 4-4"/></svg>
+                <svg id="iconHigh" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
+            </div>
+
+            <p class="result-label">Predicted result</p>
+            <p class="result-text" id="resultText">{{result}}</p>
+            <p class="result-sub" id="resultSub">Based on the vitals and lifestyle details you entered.</p>
+        </div>
+
+        <div class="actions">
+            <a href="/" class="btn btn-primary">Take Assessment Again</a>
+        </div>
+
+        <p class="disclaimer">This result is a statistical estimate generated by a predictive model and is not a medical diagnosis. Please consult a qualified healthcare professional for advice specific to you.</p>
+    </div>
+
+    <script>
+        (function(){
+            var resultText = document.getElementById('resultText');
+            var ring = document.getElementById('resultIconRing');
+            var iconNeutral = document.getElementById('iconNeutral');
+            var iconLow = document.getElementById('iconLow');
+            var iconHigh = document.getElementById('iconHigh');
+
+            var text = (resultText.textContent || '').toLowerCase();
+
+            // Best-effort keyword read of the rendered result text, purely cosmetic.
+            // Adjust these word lists (or swap this for a Jinja condition) if your
+            // model's `result` values don't match these patterns.
+            var lowPatterns  = /\b(no risk|not at risk|no disease|negative|low risk|healthy|normal|absent)\b/;
+            var highPatterns = /\b(high risk|positive|disease detected|at risk|present|risk detected)\b/;
+
+            var level = 'neutral';
+            if (lowPatterns.test(text)) { level = 'low'; }
+            else if (highPatterns.test(text)) { level = 'high'; }
+            else if (/\blow\b/.test(text)) { level = 'low'; }
+            else if (/\bhigh\b/.test(text) || /\brisk\b/.test(text)) { level = 'high'; }
+
+            if (level === 'low') {
+                ring.style.setProperty('--result-color', 'var(--green)');
+                ring.style.setProperty('--result-bg', 'rgba(46,158,109,0.12)');
+                document.documentElement.style.setProperty('--result-color', 'var(--green)');
+                iconNeutral.style.display = 'none';
+                iconLow.style.display = 'block';
+            } else if (level === 'high') {
+                ring.style.setProperty('--result-color', 'var(--red)');
+                ring.style.setProperty('--result-bg', 'rgba(225,92,92,0.12)');
+                document.documentElement.style.setProperty('--result-color', 'var(--red)');
+                iconNeutral.style.display = 'none';
+                iconHigh.style.display = 'block';
+            }
+        })();
+    </script>
+
+</body>
+</html>

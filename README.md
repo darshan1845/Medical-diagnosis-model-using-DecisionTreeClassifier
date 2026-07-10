@@ -116,23 +116,15 @@ http://127.0.0.1:5000
 
 ### Home Page
 
-> Add a screenshot here
+<img width="1885" height="906" alt="image" src="https://github.com/user-attachments/assets/52b09355-8628-4e3a-8b9a-28e3610536c4" />
+<img width="1898" height="905" alt="image" src="https://github.com/user-attachments/assets/948b5267-1a9a-415c-b151-b644dd52efe0" />
 
-```
-images/home.png
-```
 
----
 
 ### Prediction Result
 
-> Add a screenshot here
+<img width="1918" height="911" alt="image" src="https://github.com/user-attachments/assets/0276428e-ac63-4d16-a61b-9c34dcba01ea" />
 
-```
-images/result.png
-```
-
----
 
 ## 📊 Workflow
 

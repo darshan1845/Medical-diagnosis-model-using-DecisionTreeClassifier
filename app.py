@@ -32,4 +32,4 @@ def disease():
 
     return render_template('result.html', result=y_pred)
 
-app.run(debug=True)
+#app.run(debug=True)
